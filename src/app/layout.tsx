@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
@@ -19,8 +20,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className="h-full">
+      <body
+        className={clsx(
+          "h-full bg-background font-sans text-foreground antialiased [font-synthesis:none]",
+          geistSans.variable,
+          geistMono.variable,
+        )}
+      >
         {children}
       </body>
     </html>
