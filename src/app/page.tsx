@@ -1,31 +1,42 @@
 import { prisma } from "@/lib/prisma";
 import { ChevronRightIcon } from "@heroicons/react/20/solid";
-import clsx from "clsx";
 import Link from "next/link";
 import { SearchInput } from "./components/search-input";
 
 export default async function Users({
   searchParams,
 }: {
-  searchParams: { search?: string; page?: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const search = searchParams.search;
+  const search =
+    typeof searchParams.search === "string" ? searchParams.search : undefined;
 
   const perPage = 7;
   const totalUsers = await prisma.user.count({
     where: { name: { contains: search } },
   });
   const totalPages = Math.ceil(totalUsers / perPage);
-  let page = Number(searchParams.page) || 1;
-  if (page > totalPages) {
-    page = 1;
-  }
-
+  const page =
+    typeof searchParams.page === "string" &&
+    Number(searchParams.page) > 1 &&
+    Number(searchParams.page) <= totalPages
+      ? Number(searchParams.page)
+      : 1;
   const users = await prisma.user.findMany({
     take: perPage,
     skip: (page - 1) * perPage,
     where: { name: { contains: search } },
   });
+
+  const currentSearchParams = new URLSearchParams();
+
+  if (search) {
+    currentSearchParams.set("search", search);
+  }
+
+  if (page > 1) {
+    currentSearchParams.set("page", `${page}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
@@ -102,26 +113,76 @@ export default async function Users({
           of <span className="font-semibold">{totalUsers}</span> users
         </p>
         <div className="space-x-2">
-          <Link
-            href={page > 2 ? `/?page=${page - 1}` : "/"}
-            className={clsx(
-              "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50",
-              page === 1 ? "pointer-events-none opacity-50" : "",
-            )}
-          >
-            Previous
-          </Link>
-          <Link
-            href={page < totalPages ? `/?page=${page + 1}` : `/?page=${page}`}
-            className={clsx(
-              "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50",
-              page >= totalPages ? "pointer-events-none opacity-50" : "",
-            )}
-          >
-            Next
-          </Link>
+          <PreviousPage page={page} currentSearchParams={currentSearchParams} />
+          <NextPage
+            page={page}
+            totalPages={totalPages}
+            currentSearchParams={currentSearchParams}
+          />
         </div>
       </div>
     </div>
+  );
+}
+
+function PreviousPage({
+  page,
+  currentSearchParams,
+}: {
+  page: number;
+  currentSearchParams: URLSearchParams;
+}) {
+  const newSearchParams = new URLSearchParams(currentSearchParams);
+
+  if (page > 2) {
+    newSearchParams.set("page", `${page - 1}`);
+  } else {
+    newSearchParams.delete("page");
+  }
+
+  return page > 1 ? (
+    <Link
+      href={`/?${newSearchParams}`}
+      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+    >
+      Previous
+    </Link>
+  ) : (
+    <button
+      disabled
+      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 opacity-50"
+    >
+      Previous
+    </button>
+  );
+}
+
+function NextPage({
+  page,
+  totalPages,
+  currentSearchParams,
+}: {
+  page: number;
+  totalPages: number;
+  currentSearchParams: URLSearchParams;
+}) {
+  const newSearchParams = new URLSearchParams(currentSearchParams);
+
+  newSearchParams.set("page", `${page + 1}`);
+
+  return page < totalPages ? (
+    <Link
+      href={`/?${newSearchParams}`}
+      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+    >
+      Next
+    </Link>
+  ) : (
+    <button
+      disabled
+      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 opacity-50"
+    >
+      Next
+    </button>
   );
 }
