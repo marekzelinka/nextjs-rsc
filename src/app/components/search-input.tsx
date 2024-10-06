@@ -2,14 +2,22 @@
 
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { Spinner } from "./spinner";
 
 export function SearchInput({ search }: { search?: string }) {
   const { push } = useRouter();
 
+  const [isPending, startTransition] = useTransition();
+
   return (
     <div className="relative">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-        <MagnifyingGlassIcon className="size-5 text-gray-400" />
+        {isPending ? (
+          <Spinner className="size-5 animate-spin text-gray-400" />
+        ) : (
+          <MagnifyingGlassIcon className="size-5 text-gray-400" />
+        )}
       </div>
       <input
         type="search"
@@ -17,11 +25,13 @@ export function SearchInput({ search }: { search?: string }) {
         id="search"
         defaultValue={search}
         onChange={(event) => {
-          if (event.target.value) {
-            push(`/?search=${event.target.value}`);
-          } else {
-            push("/");
-          }
+          startTransition(() => {
+            if (event.target.value) {
+              push(`/?search=${event.target.value}`);
+            } else {
+              push("/");
+            }
+          });
         }}
         className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6"
         placeholder="Search"
