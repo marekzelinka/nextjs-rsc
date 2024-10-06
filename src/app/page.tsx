@@ -3,6 +3,7 @@ import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/20/solid";
+import clsx from "clsx";
 import Link from "next/link";
 
 export default async function Users({
@@ -10,10 +11,18 @@ export default async function Users({
 }: {
   searchParams: { page?: string };
 }) {
-  const page = Number(searchParams.page) || 1;
+  const perPage = 7;
+
+  const totalUsers = await prisma.user.count();
+  const totalPages = Math.ceil(totalUsers / perPage);
+  let page = Number(searchParams.page) || 1;
+  if (page > totalPages) {
+    page = 1;
+  }
+
   const users = await prisma.user.findMany({
-    take: 6,
-    skip: (page - 1) * 6,
+    take: perPage,
+    skip: (page - 1) * perPage,
   });
 
   return (
@@ -50,16 +59,16 @@ export default async function Users({
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="py-3.5 pl-6 pr-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 max-sm:w-[62px]">
                       ID
                     </th>
-                    <th className="py-3.5 pl-6 pr-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 max-sm:w-[130px]">
                       Name
                     </th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 max-sm:w-[175px]">
                       Email
                     </th>
-                    <th className="relative py-3.5 pl-3 pr-6">
+                    <th className="relative py-3.5 pl-3 pr-4">
                       <span className="sr-only">Edit</span>
                     </th>
                   </tr>
@@ -67,22 +76,22 @@ export default async function Users({
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {users.map((user) => (
                     <tr key={user.id}>
-                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-gray-900">
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
                         {user.id}
                       </td>
-                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-gray-900">
+                      <td className="max-w-[130px] truncate whitespace-nowrap px-3 py-4 text-sm font-medium sm:w-auto">
                         {user.name}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <td className="max-w-[175px] truncate whitespace-nowrap px-3 py-4 text-sm text-gray-500 sm:w-auto">
                         {user.email}
                       </td>
-                      <td className="relative whitespace-nowrap py-4 pl-4 pr-6 text-right text-sm font-medium">
+                      <td className="relative whitespace-nowrap py-4 pl-4 pr-4 text-right text-sm font-medium">
                         <a
                           href="#"
                           className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
                         >
                           Edit
-                          <ChevronRightIcon className="h-4 w-4" />
+                          <ChevronRightIcon className="size-4" />
                         </a>
                       </td>
                     </tr>
@@ -93,8 +102,35 @@ export default async function Users({
           </div>
         </div>
       </div>
-      <div>
-        <Link href={`/?page=${page + 1}`}>Next</Link>
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-gray-700">
+          Showing{" "}
+          <span className="font-semibold">{(page - 1) * perPage + 1}</span> to{" "}
+          <span className="font-semibold">
+            {Math.min(page * perPage, totalUsers)}
+          </span>{" "}
+          of <span className="font-semibold">{totalUsers}</span> users
+        </p>
+        <div className="space-x-2">
+          <Link
+            href={page > 2 ? `/?page=${page - 1}` : "/"}
+            className={clsx(
+              "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50",
+              page === 1 ? "pointer-events-none opacity-50" : "",
+            )}
+          >
+            Previous
+          </Link>
+          <Link
+            href={page < totalPages ? `/?page=${page + 1}` : `/?page=${page}`}
+            className={clsx(
+              "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50",
+              page >= totalPages ? "pointer-events-none opacity-50" : "",
+            )}
+          >
+            Next
+          </Link>
+        </div>
       </div>
     </div>
   );
