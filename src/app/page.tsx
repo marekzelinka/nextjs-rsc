@@ -1,19 +1,20 @@
 import { prisma } from "@/lib/prisma";
-import {
-  ChevronRightIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/20/solid";
+import { ChevronRightIcon } from "@heroicons/react/20/solid";
 import clsx from "clsx";
 import Link from "next/link";
+import { SearchInput } from "./components/search-input";
 
 export default async function Users({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: { search?: string; page?: string };
 }) {
-  const perPage = 7;
+  const search = searchParams.search;
 
-  const totalUsers = await prisma.user.count();
+  const perPage = 7;
+  const totalUsers = await prisma.user.count({
+    where: { name: { contains: search } },
+  });
   const totalPages = Math.ceil(totalUsers / perPage);
   let page = Number(searchParams.page) || 1;
   if (page > totalPages) {
@@ -23,25 +24,14 @@ export default async function Users({
   const users = await prisma.user.findMany({
     take: perPage,
     skip: (page - 1) * perPage,
+    where: { name: { contains: search } },
   });
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 pt-12">
       <div className="flex items-center justify-between">
         <div className="w-80">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <MagnifyingGlassIcon className="size-5 text-gray-400" />
-            </div>
-            <input
-              type="search"
-              name="search"
-              id="search"
-              className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm/6"
-              placeholder="Search"
-              aria-label="Search users"
-            />
-          </div>
+          <SearchInput search={search} />
         </div>
         <div className="ml-16 flex-none">
           <button
